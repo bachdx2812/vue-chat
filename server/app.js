@@ -7,6 +7,7 @@ const keys = require('./config/keys')
 
 const message = require('./model/message')
 const user = require('./model/user')
+const conversation = require('./model/conversation')
 
 const app = new express()
 app.use(bodyParser.json())
@@ -21,15 +22,18 @@ mongoose.connection.once('open', () => {
   console.log("DB connection established")
 })
 
+const server = app.listen(3000, () => {
+  console.log("Howdy, I am running at PORT 3000")
+})
+
 // socketio
-let io =  socket(server);
+let io = socket(server);
 
 io.on("connection", function(socket) {
   console.log("Socket Connection Established with ID :"+ socket.id)
-  socket.on("chat", async function(chat){
-    chat.created = new Date()
-    let response = await new message(chat).save()
-    socket.emit("chat", chat)
+  socket.on("POST_MESSAGE", function(data){
+    console.log(data);
+    io.emit('MESSAGE', data.message);
   })
 })
 
@@ -44,6 +48,16 @@ app.get('/users', async (req, res) => {
   res.send(result);
 })
 
-var server = app.listen(3000, () => {
-  console.log("Howdy, I am running at PORT 3000")
+app.get('/conversations', async (req, res) => {
+  let result = await conversation.find()
+  res.send(result);
 })
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
+  res.header('Access-Control-Allow-Methods', 'PUT, GET, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+

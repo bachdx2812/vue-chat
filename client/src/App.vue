@@ -13,7 +13,12 @@
       </v-toolbar>
       <v-content>
         <v-container fluid>
-          HelloWorld
+          <div v-for="(row,index) in messages" :key="index">{{ row }}</div>
+
+          <hr>
+
+          <input type="text" v-model="newMessage"/>
+          <button @click="sendMessage">Send</button>
         </v-container>
       </v-content>
     </v-app>
@@ -22,16 +27,34 @@
 
 <script>
 import SideBar from './components/SideBar.vue'
+import io from 'socket.io-client'
 
 export default {
   name: 'app',
   data: function() {
     return {
-      drawer: true
+      drawer: true,
+      messages: [],
+      newMessage: "",
+      socket : io('localhost:3000')
     }
   },
   components: {
     SideBar
+  },
+  methods: {
+    sendMessage: function(e) {
+      e.preventDefault();
+      this.socket.emit('POST_MESSAGE', {
+        message: this.newMessage
+      });
+      this.newMessage = ''
+    }
+  },
+  mounted: function() {
+    this.socket.on('MESSAGE', (data) => {
+      this.messages.push(data);
+    })
   }
 }
 </script>
